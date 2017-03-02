@@ -11,10 +11,9 @@ function Haproxy(n, services, port) {
     var addresses = hostnames.map(function(host) {
       return host + ":" + port;
     });
+
     var files = {};
     files[configPath] = buildConfig(addresses);
-
-
     var hapRef = new Container(image,
         ["haproxy-systemd-wrapper", "-p", "/run/haproxy.pid", "-f", configPath]
     ).withFiles(files);

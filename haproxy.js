@@ -1,3 +1,8 @@
+const {Container, Service, publicInternet} = require("@quilt/quilt");
+const fs = require('fs');
+const path = require('path');
+const _ = require('underscore');
+
 var image = "haproxy:1.6.4";
 var configPath = "/usr/local/etc/haproxy/haproxy.cfg";
 
@@ -34,7 +39,7 @@ function Haproxy(n, services, port, balance) {
 };
 
 function buildConfig(addrs, balance) {
-    var config = read("./haproxy.cfg");
+    var config = fs.readFileSync(path.join(__dirname, "haproxy.cfg"), {encoding: 'utf8'});
     config += "\n    balance " + balance;
     for (var i = 0 ; i < addrs.length; i++) {
         config += "\n    server " + i + " " + addrs[i] + " check resolvers dns";

@@ -6,5 +6,13 @@
   "dependencies": {
     "@quilt/quilt": "quilt/quilt",
     "mustache": "^2.3.0"
+  },
+  "devDependencies": {
+    "eslint": "^4.3.0",
+    "eslint-config-airbnb-base": "^11.3.1",
+    "eslint-plugin-import": "^2.7.0",
+    "gulp": "^3.9.1",
+    "gulp-eslint": "^4.0.0",
+    "gulp-if": "^2.0.2"
   }
 }

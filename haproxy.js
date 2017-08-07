@@ -1,6 +1,4 @@
-'use strict';
-
-const {Container, Service} = require('@quilt/quilt');
+const { Container, Service } = require('@quilt/quilt');
 const fs = require('fs');
 const path = require('path');
 const util = require('util');
@@ -35,12 +33,12 @@ function singleServiceLoadBalancer(n, service, balance = 'roundrobin') {
   // This is a temporary hack to make the MEAN example in the README simpler.
   const defaultBackendPattern = `
     default_backend %s`;
-  let frontendConfig = util.format(defaultBackendPattern, backendName(service));
-  let backendConfig = createBackendConfigs(service, balance);
-  let files = createConfigFiles(frontendConfig, backendConfig);
+  const frontendConfig = util.format(defaultBackendPattern, backendName(service));
+  const backendConfig = createBackendConfigs(service, balance);
+  const files = createConfigFiles(frontendConfig, backendConfig);
 
   return createHapService(n, service, files);
-};
+}
 
 
 /**
@@ -53,19 +51,13 @@ function singleServiceLoadBalancer(n, service, balance = 'roundrobin') {
  * @return {Service} - The HAProxy service.
  */
 function withURLrouting(n, domainToService, balance = 'roundrobin') {
-  let services = [];
-  for (let domain in domainToService) {
-    if (domainToService.hasOwnProperty(domain)) {
-      services.push(domainToService[domain]);
-    };
-  };
-
-  let frontendConfig = urlRoutingConfig(domainToService);
-  let backendConfig = createBackendConfigs(services, balance);
-  let files = createConfigFiles(frontendConfig, backendConfig);
+  const services = Object.values(domainToService);
+  const frontendConfig = urlRoutingConfig(domainToService);
+  const backendConfig = createBackendConfigs(services, balance);
+  const files = createConfigFiles(frontendConfig, backendConfig);
 
   return createHapService(n, services, files);
-};
+}
 
 
 /**
@@ -76,17 +68,18 @@ function withURLrouting(n, domainToService, balance = 'roundrobin') {
  * @return {Object.<string, string>}
  */
 function createConfigFiles(frontendConfig, backendConfig) {
-  let configTempl = fs.readFileSync(
-    path.join(__dirname, 'haproxy.cfg'), {encoding: 'utf8'});
+  const configTempl = fs.readFileSync(
+    path.join(__dirname, 'haproxy.cfg'), { encoding: 'utf8' });
 
-  let config = Mustache.render(configTempl, {port: exposedPort});
-  config += frontendConfig + '\n' + backendConfig;
+  let config = Mustache.render(configTempl, { port: exposedPort });
+  config += `${frontendConfig}
+${backendConfig}`;
 
-  let files = {};
+  const files = {};
   files[configPath] = config;
 
   return files;
-};
+}
 
 
 /**
@@ -97,20 +90,20 @@ function createConfigFiles(frontendConfig, backendConfig) {
  * contents, describing the files to put in each of the proxy containers.
  * @return {Service} - The new HAProxy service.
  */
-function createHapService(n, services, files) {
-  services = Array.isArray(services) ? services : [services];
+function createHapService(n, servicesArg, files) {
+  const services = Array.isArray(servicesArg) ? servicesArg : [servicesArg];
 
-  let hapRef = new Container(image,
-    ['haproxy-systemd-wrapper', '-p', '/run/haproxy.pid', '-f', configPath]
-  ).withFiles(files);
+  const hapRef = new Container(image, [
+    'haproxy-systemd-wrapper', '-p', '/run/haproxy.pid', '-f', configPath,
+  ]).withFiles(files);
 
-  let haproxy = new Service('haproxy', hapRef.replicate(n));
-  services.forEach(function(service) {
+  const haproxy = new Service('haproxy', hapRef.replicate(n));
+  services.forEach((service) => {
     service.allowFrom(haproxy, internalPort);
   });
 
   return haproxy;
-};
+}
 
 
 /**
@@ -129,19 +122,16 @@ function urlRoutingConfig(domainToService) {
   let acls = '';
   let backendRules = '';
 
-  for (let domain in domainToService) {
-    if (!domainToService.hasOwnProperty(domain)) {
-      continue;
-    }
-    let name = backendName(domainToService[domain]);
-    let match = name + '_req';
+  Object.keys(domainToService).forEach((domain) => {
+    const name = backendName(domainToService[domain]);
+    const match = `${name}_req`;
 
     acls += util.format(aclPattern, match, domain);
     backendRules += util.format(useBackendPattern, name, match);
-  };
+  });
 
   return acls + backendRules;
-};
+}
 
 
 /**
@@ -153,28 +143,28 @@ function urlRoutingConfig(domainToService) {
  * docs for possible algorithms.
  * @return {string}
  */
-function createBackendConfigs(services, balance) {
-  services = Array.isArray(services) ? services : [services];
+function createBackendConfigs(servicesArg, balance) {
+  const services = Array.isArray(servicesArg) ? servicesArg : [servicesArg];
   let config = '';
 
-  services.forEach(function(service) {
-    let name = backendName(service);
-    let addrs = service.children();
+  services.forEach((service) => {
+    const name = backendName(service);
+    const addrs = service.children();
     const serverPattern = `
     server %s %s:%d check resolvers dns cookie %s`;
 
     config += util.format(backendPattern, name, balance);
-    for (let i = 0; i < addrs.length; i++) {
-      let serverName = util.format('%s-%d', name, i);
+    addrs.forEach((addr, i) => {
+      const serverName = util.format('%s-%d', name, i);
       config += util.format(serverPattern,
         serverName, addrs[i], internalPort, serverName);
-    };
+    });
 
     config += '\n';
   });
 
   return config;
-};
+}
 
 
 /**
@@ -184,6 +174,6 @@ function createBackendConfigs(services, balance) {
  */
 function backendName(service) {
   return service.name;
-};
+}
 
-module.exports = {exposedPort, singleServiceLoadBalancer, withURLrouting};
+module.exports = { exposedPort, singleServiceLoadBalancer, withURLrouting };

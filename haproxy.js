@@ -22,41 +22,12 @@ backend %s
 
 
 /**
- * Creates a replicated HAProxy service that load balances over instances of a
- * single service, using sticky sessions.
- * @param {number} n - The desired number of HAProxy replicas.
- * @param {Service} service - The service whose traffic should be load balanced.
- * @param {string} balance - The load balancing algorithm to use.
- * @return {Service} - The HAProxy service.
+ * Returns the backend name for the given Service.
+ * @param {Service} service
+ * @return {string}
  */
-function singleServiceLoadBalancer(n, service, balance = 'roundrobin') {
-  // This is a temporary hack to make the MEAN example in the README simpler.
-  const defaultBackendPattern = `
-    default_backend %s`;
-  const frontendConfig = util.format(defaultBackendPattern, backendName(service));
-  const backendConfig = createBackendConfigs(service, balance);
-  const files = createConfigFiles(frontendConfig, backendConfig);
-
-  return createHapService(n, service, files);
-}
-
-
-/**
- * Creates a replicated HAProxy service that does load balanced, URL based
- * routing with sticky sessions.
- * @param {number} n - The desired number of HAProxy replicas.
- * @param {Object.<string, Service>} domainToService - A map from domain name to
- * the service that should receive traffic for that domain.
- * @param {string} balance - The load balancing algorithm to use.
- * @return {Service} - The HAProxy service.
- */
-function withURLrouting(n, domainToService, balance = 'roundrobin') {
-  const services = Object.values(domainToService);
-  const frontendConfig = urlRoutingConfig(domainToService);
-  const backendConfig = createBackendConfigs(services, balance);
-  const files = createConfigFiles(frontendConfig, backendConfig);
-
-  return createHapService(n, services, files);
+function backendName(service) {
+  return service.name;
 }
 
 
@@ -168,12 +139,42 @@ function createBackendConfigs(servicesArg, balance) {
 
 
 /**
- * Returns the backend name for the given Service.
- * @param {Service} service
- * @return {string}
+ * Creates a replicated HAProxy service that load balances over instances of a
+ * single service, using sticky sessions.
+ * @param {number} n - The desired number of HAProxy replicas.
+ * @param {Service} service - The service whose traffic should be load balanced.
+ * @param {string} balance - The load balancing algorithm to use.
+ * @return {Service} - The HAProxy service.
  */
-function backendName(service) {
-  return service.name;
+function singleServiceLoadBalancer(n, service, balance = 'roundrobin') {
+  // This is a temporary hack to make the MEAN example in the README simpler.
+  const defaultBackendPattern = `
+    default_backend %s`;
+  const frontendConfig = util.format(defaultBackendPattern, backendName(service));
+  const backendConfig = createBackendConfigs(service, balance);
+  const files = createConfigFiles(frontendConfig, backendConfig);
+
+  return createHapService(n, service, files);
 }
+
+
+/**
+ * Creates a replicated HAProxy service that does load balanced, URL based
+ * routing with sticky sessions.
+ * @param {number} n - The desired number of HAProxy replicas.
+ * @param {Object.<string, Service>} domainToService - A map from domain name to
+ * the service that should receive traffic for that domain.
+ * @param {string} balance - The load balancing algorithm to use.
+ * @return {Service} - The HAProxy service.
+ */
+function withURLrouting(n, domainToService, balance = 'roundrobin') {
+  const services = Object.values(domainToService);
+  const frontendConfig = urlRoutingConfig(domainToService);
+  const backendConfig = createBackendConfigs(services, balance);
+  const files = createConfigFiles(frontendConfig, backendConfig);
+
+  return createHapService(n, services, files);
+}
+
 
 module.exports = { exposedPort, singleServiceLoadBalancer, withURLrouting };

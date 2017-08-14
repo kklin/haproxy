@@ -64,9 +64,7 @@ ${backendConfig}`;
 function createHapService(n, servicesArg, files) {
   const services = Array.isArray(servicesArg) ? servicesArg : [servicesArg];
 
-  const hapRef = new Container(image, [
-    'haproxy-systemd-wrapper', '-p', '/run/haproxy.pid', '-f', configPath,
-  ]).withFiles(files);
+  const hapRef = new Container(image, ['-f', configPath]).withFiles(files);
 
   const haproxy = new Service('haproxy', hapRef.replicate(n));
   services.forEach((service) => {

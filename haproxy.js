@@ -106,8 +106,8 @@ function urlRoutingConfig(domainToService) {
 /**
  * Returns backend rules to load balance over the given services, using sticky
  * sessions.
- * @param {(Service|Service[])} services - The services for which to generate
- * backend rules. See HAProxy's docs for possible balance algorithms.
+ * @param {(Service|Service[])} services - The service for which to generate
+ * backend rules.
  * @param {string} balance - The load balancing algorithm to use. See HAProxy's
  * docs for possible algorithms.
  * @return {string}

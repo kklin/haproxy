@@ -31,18 +31,18 @@ resolvers dns
 frontend http-in
     bind *:80
 
-    default_backend foo
+    default_backend default
 
-backend foo
+backend default
     balance roundrobin
     cookie SERVERID insert indirect nocache
-    server foo-0 1.foo.q:80 check resolvers dns cookie foo-0
-    server foo-1 2.foo.q:80 check resolvers dns cookie foo-1
+    server default-0 1.foo.q:80 check resolvers dns cookie default-0
+    server default-1 2.foo.q:80 check resolvers dns cookie default-1
 `;
 
       const hap = haproxy.singleServiceLoadBalancer(1, service);
-      assert.deepEqual(hap.containers[0].filepathToContent,
-        { '/usr/local/etc/haproxy/haproxy.cfg': expConfig });
+      assert.equal(hap.containers[0].filepathToContent['/usr/local/etc/haproxy/haproxy.cfg'],
+        expConfig);
     });
   });
 
@@ -70,25 +70,26 @@ resolvers dns
 frontend http-in
     bind *:80
 
-    acl foo_req hdr(host) -i serviceA
-    acl baz_req hdr(host) -i serviceB
-    use_backend foo if foo_req
-    use_backend baz if baz_req
+    acl serviceA_req hdr(host) -i serviceA
+    use_backend serviceA if serviceA_req
 
-backend foo
+    acl serviceB_req hdr(host) -i serviceB
+    use_backend serviceB if serviceB_req
+
+backend serviceA
     balance roundrobin
     cookie SERVERID insert indirect nocache
-    server foo-0 1.foo.q:80 check resolvers dns cookie foo-0
+    server serviceA-0 1.foo.q:80 check resolvers dns cookie serviceA-0
 
-backend baz
+backend serviceB
     balance roundrobin
     cookie SERVERID insert indirect nocache
-    server baz-0 1.baz.q:80 check resolvers dns cookie baz-0
+    server serviceB-0 1.baz.q:80 check resolvers dns cookie serviceB-0
 `;
 
       const hap = haproxy.withURLrouting(1, { serviceA, serviceB });
-      assert.deepEqual(hap.containers[0].filepathToContent,
-        { '/usr/local/etc/haproxy/haproxy.cfg': expConfig });
+      assert.equal(hap.containers[0].filepathToContent['/usr/local/etc/haproxy/haproxy.cfg'],
+        expConfig);
     });
   });
 });

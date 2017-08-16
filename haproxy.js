@@ -1,7 +1,6 @@
 const { Container, Service } = require('@quilt/quilt');
 const fs = require('fs');
 const path = require('path');
-const util = require('util');
 const Mustache = require('mustache');
 
 const image = 'haproxy:1.7';
@@ -12,24 +11,6 @@ const internalPort = 80;
 
 // The port HAProxy listens on.
 const exposedPort = 80;
-
-// The SERVERID session cookie ensures that a given user's requests are always
-// forwarded to the same backend server.
-const backendPattern = `
-backend %s
-    balance %s
-    cookie SERVERID insert indirect nocache`;
-
-
-/**
- * Returns the backend name for the given Service.
- * @param {Service} service
- * @return {string}
- */
-function backendName(service) {
-  return service.name;
-}
-
 
 /**
  * Returns a map from the HAProxy config path to the combined frontend and
@@ -43,15 +24,17 @@ function createConfigFiles(frontendConfig, backendConfig) {
     path.join(__dirname, 'haproxy.cfg'), { encoding: 'utf8' });
 
   let config = Mustache.render(configTempl, { port: exposedPort });
-  config += `${frontendConfig}
-${backendConfig}`;
+  config += `
+${frontendConfig}
+
+${backendConfig}
+`;
 
   const files = {};
   files[configPath] = config;
 
   return files;
 }
-
 
 /**
  * Returns an HAProxy service with n containers containing the given files.
@@ -78,58 +61,42 @@ function createHapService(n, servicesArg, files) {
 /**
  * Returns rules for choosing a backend based on the Host header in an incoming
  * HTTP request.
- * @param {Object.<string, Service>} domainToService - A map from domain name to
- * the service that should receive traffic for that domain.
+ * @param {string} domain - The domain name for which the given backend should handle
+ * traffic.
+ * @param {string} backendName - The backend that should receive traffic for the domain.
+ * This is a HAProxy identifier for within the config file. It should be match
+ * a backend created with `createBackendConfig`.
  * @return {string}
  */
-function urlRoutingConfig(domainToService) {
-  const aclPattern = `
-    acl %s hdr(host) -i %s`;
-  const useBackendPattern = `
-    use_backend %s if %s`;
-
-  let acls = '';
-  let backendRules = '';
-
-  Object.keys(domainToService).forEach((domain) => {
-    const name = backendName(domainToService[domain]);
-    const match = `${name}_req`;
-
-    acls += util.format(aclPattern, match, domain);
-    backendRules += util.format(useBackendPattern, name, match);
-  });
-
-  return acls + backendRules;
+function urlRoutingConfig(domain, backendName) {
+  return `    acl ${backendName}_req hdr(host) -i ${domain}
+    use_backend ${backendName} if ${backendName}_req`;
 }
 
 
 /**
- * Returns backend rules to load balance over the given services, using sticky
+ * Returns backend rules to load balance over the given service, using sticky
  * sessions.
- * @param {(Service|Service[])} services - The service for which to generate
+ * @param {string} name - An identifier for the created backend config. Other
+ * parts of the config that reference this backend should do so using this
+ * name.
+ * @param {Service} service - The service for which to generate
  * backend rules.
  * @param {string} balance - The load balancing algorithm to use. See HAProxy's
  * docs for possible algorithms.
  * @return {string}
  */
-function createBackendConfigs(servicesArg, balance) {
-  const services = Array.isArray(servicesArg) ? servicesArg : [servicesArg];
-  let config = '';
+function createBackendConfig(name, service, balance) {
+  // The SERVERID session cookie ensures that a given user's requests are always
+  // forwarded to the same backend server.
+  let config = `backend ${name}
+    balance ${balance}
+    cookie SERVERID insert indirect nocache`;
 
-  services.forEach((service) => {
-    const name = backendName(service);
-    const addrs = service.children();
-    const serverPattern = `
-    server %s %s:%d check resolvers dns cookie %s`;
-
-    config += util.format(backendPattern, name, balance);
-    addrs.forEach((addr, i) => {
-      const serverName = util.format('%s-%d', name, i);
-      config += util.format(serverPattern,
-        serverName, addrs[i], internalPort, serverName);
-    });
-
-    config += '\n';
+  service.children().forEach((addr, i) => {
+    const serverName = `${name}-${i}`;
+    config += `
+    server ${serverName} ${addr}:${internalPort} check resolvers dns cookie ${serverName}`;
   });
 
   return config;
@@ -146,10 +113,8 @@ function createBackendConfigs(servicesArg, balance) {
  */
 function singleServiceLoadBalancer(n, service, balance = 'roundrobin') {
   // This is a temporary hack to make the MEAN example in the README simpler.
-  const defaultBackendPattern = `
-    default_backend %s`;
-  const frontendConfig = util.format(defaultBackendPattern, backendName(service));
-  const backendConfig = createBackendConfigs(service, balance);
+  const frontendConfig = '    default_backend default';
+  const backendConfig = createBackendConfig('default', service, balance);
   const files = createConfigFiles(frontendConfig, backendConfig);
 
   return createHapService(n, service, files);
@@ -166,12 +131,16 @@ function singleServiceLoadBalancer(n, service, balance = 'roundrobin') {
  * @return {Service} - The HAProxy service.
  */
 function withURLrouting(n, domainToService, balance = 'roundrobin') {
-  const services = Object.values(domainToService);
-  const frontendConfig = urlRoutingConfig(domainToService);
-  const backendConfig = createBackendConfigs(services, balance);
+  const domains = Object.keys(domainToService);
+  const frontendConfig = domains.map(
+    domain => urlRoutingConfig(domain, domain))
+    .join('\n\n');
+  const backendConfig = domains.map(
+    domain => createBackendConfig(domain, domainToService[domain], balance))
+    .join('\n\n');
   const files = createConfigFiles(frontendConfig, backendConfig);
 
-  return createHapService(n, services, files);
+  return createHapService(n, Object.values(domainToService), files);
 }
 
 

@@ -1,6 +1,7 @@
 const gulp = require('gulp');
 const gulpIf = require('gulp-if');
 const eslint = require('gulp-eslint');
+const mocha = require('gulp-mocha');
 
 const lintFiles = ['**/*.js', '!node_modules/**'];
 
@@ -28,3 +29,9 @@ gulp.task('lint-fix', () =>
     .pipe(eslint.format()) // Output the lint results to the console.
     .pipe(gulpIf(isFixed, gulp.dest('.'))) // Write the fixed files.
     .pipe(eslint.failAfterError()));
+
+gulp.task('test', () =>
+  gulp.src(['test/test-*.js'], { read: false })
+    .pipe(mocha({
+      reporter: 'spec',
+    })));

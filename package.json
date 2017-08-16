@@ -8,11 +8,14 @@
     "mustache": "^2.3.0"
   },
   "devDependencies": {
+    "chai": "^4.1.1",
     "eslint": "^4.3.0",
     "eslint-config-airbnb-base": "^11.3.1",
     "eslint-plugin-import": "^2.7.0",
     "gulp": "^3.9.1",
     "gulp-eslint": "^4.0.0",
-    "gulp-if": "^2.0.2"
+    "gulp-if": "^2.0.2",
+    "gulp-mocha": "^4.3.1",
+    "mocha": "^3.5.0"
   }
 }

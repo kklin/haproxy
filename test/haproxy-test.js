@@ -9,13 +9,8 @@ describe('haproxy', () => {
     quilt.resetGlobals();
   });
 
-  describe('singleServiceLoadBalancer', () => {
+  describe('simpleLoadBalancer', () => {
     it('config', () => {
-      const service = new quilt.Service('foo', [
-        new quilt.Container('bar'),
-        new quilt.Container('baz'),
-      ]);
-
       const expConfig = `global
 
 defaults
@@ -36,11 +31,12 @@ frontend http-in
 backend default
     balance roundrobin
     cookie SERVERID insert indirect nocache
-    server default-0 1.foo.q:80 check resolvers dns cookie default-0
-    server default-1 2.foo.q:80 check resolvers dns cookie default-1
+    server foo2.q foo2.q:80 check resolvers dns cookie foo2.q
+    server foo3.q foo3.q:80 check resolvers dns cookie foo3.q
 `;
 
-      const hap = haproxy.singleServiceLoadBalancer(1, service);
+      const containers = new quilt.Container('foo', 'image').replicate(2);
+      const hap = haproxy.simpleLoadBalancer(1, containers);
       assert.equal(hap.containers[0].filepathToContent['/usr/local/etc/haproxy/haproxy.cfg'],
         expConfig);
     });
@@ -48,13 +44,6 @@ backend default
 
   describe('withURLrouting', () => {
     it('config', () => {
-      const serviceA = new quilt.Service('foo', [
-        new quilt.Container('bar'),
-      ]);
-      const serviceB = new quilt.Service('baz', [
-        new quilt.Container('quux'),
-      ]);
-
       const expConfig = `global
 
 defaults
@@ -70,24 +59,26 @@ resolvers dns
 frontend http-in
     bind *:80
 
-    acl serviceA_req hdr(host) -i serviceA
-    use_backend serviceA if serviceA_req
+    acl domainA_req hdr(host) -i domainA
+    use_backend domainA if domainA_req
 
-    acl serviceB_req hdr(host) -i serviceB
-    use_backend serviceB if serviceB_req
+    acl domainB_req hdr(host) -i domainB
+    use_backend domainB if domainB_req
 
-backend serviceA
+backend domainA
     balance roundrobin
     cookie SERVERID insert indirect nocache
-    server serviceA-0 1.foo.q:80 check resolvers dns cookie serviceA-0
+    server foo.q foo.q:80 check resolvers dns cookie foo.q
 
-backend serviceB
+backend domainB
     balance roundrobin
     cookie SERVERID insert indirect nocache
-    server serviceB-0 1.baz.q:80 check resolvers dns cookie serviceB-0
+    server bar.q bar.q:80 check resolvers dns cookie bar.q
 `;
 
-      const hap = haproxy.withURLrouting(1, { serviceA, serviceB });
+      const domainA = [new quilt.Container('foo', 'image')];
+      const domainB = [new quilt.Container('bar', 'image')];
+      const hap = haproxy.withURLrouting(1, { domainA, domainB });
       assert.equal(hap.containers[0].filepathToContent['/usr/local/etc/haproxy/haproxy.cfg'],
         expConfig);
     });

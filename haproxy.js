@@ -1,4 +1,4 @@
-const { Container, Service } = require('@quilt/quilt');
+const { Container } = require('@quilt/quilt');
 const fs = require('fs');
 const path = require('path');
 const Mustache = require('mustache');
@@ -37,22 +37,20 @@ ${backendConfig}
 }
 
 /**
- * Returns an HAProxy service with n containers containing the given files.
- * @param {number} n - The number of HAProxy replicas in the service.
+ * Returns an HAProxy container containing the given files.
  * @param {Container[]} containers - The containers to put behind the proxy.
  * @param {Object.<string, string>} files - A map from filenames to file
  * contents, describing the files to put in each of the proxy containers.
- * @return {Service} - The new HAProxy service.
+ * @return {Container} - The new HAProxy container.
  */
-function createHapService(n, containers, files) {
-  const hapRef = new Container('haproxy', image, {
+function createHapContainer(containers, files) {
+  const haproxy = new Container('haproxy', image, {
     command: ['-f', configPath],
     filepathToContent: files,
   });
 
-  const haproxy = new Service('haproxy', hapRef.replicate(n));
   containers.forEach((c) => {
-    c.allowFrom(haproxy.containers, internalPort);
+    c.allowFrom(haproxy, internalPort);
   });
 
   return haproxy;
@@ -110,32 +108,30 @@ function createBackendConfig(name, containers, balance) {
  * account the Host header of the request -- all requests will be balanced
  * across the same set of containers. Domain-based routing is available with
  * `withURLrouting`.
- * @param {number} n - The desired number of HAProxy replicas.
  * @param {Container[]} containers - The containers whose traffic should be load balanced.
  * @param {string} balance - The load balancing algorithm to use. See HAProxy's
  * docs for possible algorithms.
- * @return {Service} - The HAProxy service.
+ * @return {Container} - The HAProxy container.
  */
-function simpleLoadBalancer(n, containers, balance = 'roundrobin') {
+function simpleLoadBalancer(containers, balance = 'roundrobin') {
   const frontendConfig = '    default_backend default';
   const backendConfig = createBackendConfig('default', containers, balance);
   const files = createConfigFiles(frontendConfig, backendConfig);
 
-  return createHapService(n, containers, files);
+  return createHapContainer(containers, files);
 }
 
 
 /**
- * Creates a replicated HAProxy service that does load balanced, URL based
+ * Creates a HAProxy container that does load balanced, URL based
  * routing with sticky sessions.
- * @param {number} n - The desired number of HAProxy replicas.
  * @param {Object.<string, Container[]>} domainToContainers - A map from domain name to
  * the containers that should receive traffic for that domain.
  * @param {string} balance - The load balancing algorithm to use. See HAProxy's
  * docs for possible algorithms.
- * @return {Service} - The HAProxy service.
+ * @return {Container} - The HAProxy container.
  */
-function withURLrouting(n, domainToContainers, balance = 'roundrobin') {
+function withURLrouting(domainToContainers, balance = 'roundrobin') {
   const domains = Object.keys(domainToContainers);
   const frontendConfig = domains.map(
     domain => urlRoutingConfig(domain, domain))
@@ -147,7 +143,7 @@ function withURLrouting(n, domainToContainers, balance = 'roundrobin') {
 
   const allContainers = Object.values(domainToContainers)
     .reduce((a, b) => a.concat(b), []);
-  return createHapService(n, allContainers, files);
+  return createHapContainer(allContainers, files);
 }
 
 

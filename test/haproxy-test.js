@@ -36,8 +36,8 @@ backend default
 `;
 
       const containers = new quilt.Container('foo', 'image').replicate(2);
-      const hap = haproxy.simpleLoadBalancer(1, containers);
-      assert.equal(hap.containers[0].filepathToContent['/usr/local/etc/haproxy/haproxy.cfg'],
+      const hap = haproxy.simpleLoadBalancer(containers);
+      assert.equal(hap.filepathToContent['/usr/local/etc/haproxy/haproxy.cfg'],
         expConfig);
     });
   });
@@ -78,8 +78,8 @@ backend domainB
 
       const domainA = [new quilt.Container('foo', 'image')];
       const domainB = [new quilt.Container('bar', 'image')];
-      const hap = haproxy.withURLrouting(1, { domainA, domainB });
-      assert.equal(hap.containers[0].filepathToContent['/usr/local/etc/haproxy/haproxy.cfg'],
+      const hap = haproxy.withURLrouting({ domainA, domainB });
+      assert.equal(hap.filepathToContent['/usr/local/etc/haproxy/haproxy.cfg'],
         expConfig);
     });
   });

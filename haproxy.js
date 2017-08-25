@@ -117,7 +117,6 @@ function createBackendConfig(name, containers, balance) {
  * @return {Service} - The HAProxy service.
  */
 function simpleLoadBalancer(n, containers, balance = 'roundrobin') {
-  // This is a temporary hack to make the MEAN example in the README simpler.
   const frontendConfig = '    default_backend default';
   const backendConfig = createBackendConfig('default', containers, balance);
   const files = createConfigFiles(frontendConfig, backendConfig);

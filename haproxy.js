@@ -38,10 +38,10 @@ ${backendConfig}
 
 /**
  * Returns an HAProxy container containing the given files.
- * @param {Container[]} containers - The containers to put behind the proxy.
- * @param {Object.<string, string>} files - A map from filenames to file
+ * @param {Container[]} containers The containers to put behind the proxy.
+ * @param {Object.<string, string>} files A map from filenames to file
  * contents, describing the files to put in each of the proxy containers.
- * @return {Container} - The new HAProxy container.
+ * @return {Container} The new HAProxy container.
  */
 function createHapContainer(containers, files) {
   const haproxy = new Container('haproxy', image, {
@@ -60,9 +60,9 @@ function createHapContainer(containers, files) {
 /**
  * Returns rules for choosing a backend based on the Host header in an incoming
  * HTTP request.
- * @param {string} domain - The domain name for which the given backend should handle
+ * @param {string} domain The domain name for which the given backend should handle
  * traffic.
- * @param {string} backendName - The backend that should receive traffic for the domain.
+ * @param {string} backendName The backend that should receive traffic for the domain.
  * This is a HAProxy identifier for within the config file. It should be match
  * a backend created with `createBackendConfig`.
  * @return {string}
@@ -76,12 +76,12 @@ function urlRoutingConfig(domain, backendName) {
 /**
  * Returns backend rules to load balance over the given containers, using sticky
  * sessions.
- * @param {string} name - An identifier for the created backend config. Other
+ * @param {string} name An identifier for the created backend config. Other
  * parts of the config that reference this backend should do so using this
  * name.
- * @param {Container[]} containers - The containers that traffic should be load
+ * @param {Container[]} containers The containers that traffic should be load
  * balanced over.
- * @param {string} balance - The load balancing algorithm to use. See HAProxy's
+ * @param {string} balance The load balancing algorithm to use. See HAProxy's
  * docs for possible algorithms.
  * @return {string}
  */
@@ -108,10 +108,10 @@ function createBackendConfig(name, containers, balance) {
  * account the Host header of the request -- all requests will be balanced
  * across the same set of containers. Domain-based routing is available with
  * `withURLrouting`.
- * @param {Container[]} containers - The containers whose traffic should be load balanced.
- * @param {string} balance - The load balancing algorithm to use. See HAProxy's
+ * @param {Container[]} containers The containers whose traffic should be load balanced.
+ * @param {string} balance The load balancing algorithm to use. See HAProxy's
  * docs for possible algorithms.
- * @return {Container} - The HAProxy container.
+ * @return {Container} The HAProxy container.
  */
 function simpleLoadBalancer(containers, balance = 'roundrobin') {
   const frontendConfig = '    default_backend default';
@@ -125,11 +125,11 @@ function simpleLoadBalancer(containers, balance = 'roundrobin') {
 /**
  * Creates a HAProxy container that does load balanced, URL based
  * routing with sticky sessions.
- * @param {Object.<string, Container[]>} domainToContainers - A map from domain name to
+ * @param {Object.<string, Container[]>} domainToContainers A map from domain name to
  * the containers that should receive traffic for that domain.
- * @param {string} balance - The load balancing algorithm to use. See HAProxy's
+ * @param {string} balance The load balancing algorithm to use. See HAProxy's
  * docs for possible algorithms.
- * @return {Container} - The HAProxy container.
+ * @return {Container} The HAProxy container.
  */
 function withURLrouting(domainToContainers, balance = 'roundrobin') {
   const domains = Object.keys(domainToContainers);

@@ -4,7 +4,7 @@
   "main": "./haproxy.js",
   "license": "MIT",
   "dependencies": {
-    "@quilt/quilt": "quilt/quilt",
+    "@quilt/quilt": "^0.3.0",
     "mustache": "^2.3.0"
   },
   "devDependencies": {

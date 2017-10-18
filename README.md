@@ -1,6 +1,6 @@
-# HAProxy for Quilt
+# HAProxy for Kelda
 
-This repository implements a HAProxy blueprint for Quilt. The module has two different
+This repository implements a HAProxy blueprint for Kelda. The module has two different
 constructors: `simpleLoadBalancer` and `withURLrouting`.
 
 ### simpleLoadBalancer
@@ -18,8 +18,8 @@ HAProxy will communicate with the containers behind it on port 80.
 
 #### Example
 ```javascript
-const {Container} = require('@quilt/quilt');
-const haproxy = require('@quilt/haproxy');
+const {Container} = require('kelda');
+const haproxy = require('@kelda/haproxy');
 
 // Create 3 nginx containers
 const nginxContainers = [];
@@ -118,4 +118,4 @@ proxy.allowFrom(publicInternet, haproxy.exposedPort);
 This will open port 80 on the proxy instance.
 
 ## More
-See [Quilt](http://quilt.io) for more information.
+See [Kelda](http://kelda.io) for more information.

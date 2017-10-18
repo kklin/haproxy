@@ -1,12 +1,12 @@
 /* eslint-env mocha */
 
 const assert = require('chai').assert;
-const quilt = require('@quilt/quilt');
+const kelda = require('kelda');
 const haproxy = require('../haproxy');
 
 describe('haproxy', () => {
   beforeEach(() => {
-    quilt.resetGlobals();
+    kelda.resetGlobals();
   });
 
   describe('simpleLoadBalancer', () => {
@@ -37,7 +37,7 @@ backend default
 
       const containers = [];
       for (let i = 0; i < 2; i += 1) {
-        containers.push(new quilt.Container('foo', 'image'));
+        containers.push(new kelda.Container('foo', 'image'));
       }
       const hap = haproxy.simpleLoadBalancer(containers);
       assert.equal(hap.filepathToContent['/usr/local/etc/haproxy/haproxy.cfg'],
@@ -79,8 +79,8 @@ backend domainB
     server bar.q bar.q:80 check resolvers dns cookie bar.q
 `;
 
-      const domainA = [new quilt.Container('foo', 'image')];
-      const domainB = [new quilt.Container('bar', 'image')];
+      const domainA = [new kelda.Container('foo', 'image')];
+      const domainB = [new kelda.Container('bar', 'image')];
       const hap = haproxy.withURLrouting({ domainA, domainB });
       assert.equal(hap.filepathToContent['/usr/local/etc/haproxy/haproxy.cfg'],
         expConfig);

@@ -1,10 +1,10 @@
 {
-  "name": "@quilt/haproxy",
+  "name": "@kelda/haproxy",
   "version": "0.3.0",
   "main": "./haproxy.js",
   "license": "MIT",
   "dependencies": {
-    "@quilt/quilt": "quilt/quilt",
+    "kelda": "0.x",
     "mustache": "^2.3.0"
   },
   "devDependencies": {

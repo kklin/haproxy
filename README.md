@@ -101,15 +101,15 @@ frontend http-in
 backend webA.com
     balance roundrobin
     cookie SERVERID insert indirect nocache
-    server webA2.q webA2.q:80 check resolvers dns cookie webA2.q
-    server webA3.q webA3.q:80 check resolvers dns cookie webA3.q
-    server webA4.q webA4.q:80 check resolvers dns cookie webA4.q
+    server webA2 webA2:80 check resolvers dns cookie webA2
+    server webA3 webA3:80 check resolvers dns cookie webA3
+    server webA4 webA4:80 check resolvers dns cookie webA4
 
 backend webB.com
     balance roundrobin
     cookie SERVERID insert indirect nocache
-    server webB2.q webB2.q:80 check resolvers dns cookie webB2.q
-    server webB3.q webB3.q:80 check resolvers dns cookie webB3.q
+    server webB2 webB2:80 check resolvers dns cookie webB2
+    server webB3 webB3:80 check resolvers dns cookie webB3
 ```
 
 ## Accessing the Proxy
